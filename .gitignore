@@ -1,0 +1,5 @@
+*.deb
+sisyphus
+gopkg/*
+.vagrant/*
+go/*

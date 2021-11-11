@@ -1,0 +1,14 @@
+[Unit]
+Description=Golang Kafka -> Influx 2.0 Forwarder
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/sisyphus -config /etc/sisyphus/config.yml
+LimitNOFILE=16384
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

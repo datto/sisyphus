@@ -1,0 +1,59 @@
+# github.com/VictoriaMetrics/metrics v1.18.1
+## explicit
+github.com/VictoriaMetrics/metrics
+# github.com/confluentinc/confluent-kafka-go v1.7.0
+## explicit
+github.com/confluentinc/confluent-kafka-go/kafka
+github.com/confluentinc/confluent-kafka-go/kafka/librdkafka_vendor
+# github.com/deepmap/oapi-codegen v1.8.2
+github.com/deepmap/oapi-codegen/pkg/runtime
+github.com/deepmap/oapi-codegen/pkg/types
+# github.com/influxdata/influxdb v1.9.5
+## explicit
+github.com/influxdata/influxdb/models
+github.com/influxdata/influxdb/pkg/escape
+# github.com/influxdata/influxdb-client-go/v2 v2.5.1
+## explicit
+github.com/influxdata/influxdb-client-go/v2
+github.com/influxdata/influxdb-client-go/v2/api
+github.com/influxdata/influxdb-client-go/v2/api/http
+github.com/influxdata/influxdb-client-go/v2/api/query
+github.com/influxdata/influxdb-client-go/v2/api/write
+github.com/influxdata/influxdb-client-go/v2/domain
+github.com/influxdata/influxdb-client-go/v2/internal/gzip
+github.com/influxdata/influxdb-client-go/v2/internal/http
+github.com/influxdata/influxdb-client-go/v2/internal/log
+github.com/influxdata/influxdb-client-go/v2/internal/write
+github.com/influxdata/influxdb-client-go/v2/log
+# github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839
+github.com/influxdata/line-protocol
+# github.com/json-iterator/go v1.1.12
+## explicit
+github.com/json-iterator/go
+# github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+github.com/modern-go/concurrent
+# github.com/modern-go/reflect2 v1.0.2
+github.com/modern-go/reflect2
+# github.com/pkg/errors v0.9.1
+github.com/pkg/errors
+# github.com/pkg/profile v1.6.0
+## explicit
+github.com/pkg/profile
+# github.com/sirupsen/logrus v1.8.1
+## explicit
+github.com/sirupsen/logrus
+# github.com/valyala/fastrand v1.1.0
+github.com/valyala/fastrand
+# github.com/valyala/histogram v1.2.0
+github.com/valyala/histogram
+# golang.org/x/net v0.0.0-20210119194325-5f4716e94777
+golang.org/x/net/publicsuffix
+# golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# gopkg.in/yaml.v2 v2.3.0
+gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+## explicit
+gopkg.in/yaml.v3
