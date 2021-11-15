@@ -24,7 +24,6 @@ jobs:
         run: |
           make install-golint
           make install-errcheck
-          make install-golangci-lint
       - name: Build
         env:
           GO111MODULE: on
