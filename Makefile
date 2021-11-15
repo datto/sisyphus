@@ -36,8 +36,8 @@ errcheck: install-errcheck ## run errcheck against code
 
 vendor-update: ## update vendor dependencies
 	rm -rf go.mod go.sum vendor/
+	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go mod init $(NAME)
 	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go mod tidy -compat=1.17
-	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go mod tidy
 	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go mod vendor
 
 build: ## actually build package
