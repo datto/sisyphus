@@ -18,7 +18,7 @@ help:
 	| column -t -c 1  -s '::'
 
 setup:
-	docker pull golang:$(GOVER)
+	docker pull golang:$(GO_VER)
 
 test: fmt lint ## run tests
 	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go test -race -mod=vendor ./...
