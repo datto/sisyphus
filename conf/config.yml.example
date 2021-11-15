@@ -3,13 +3,13 @@ brokers: ["localhost:9092"]
 writepaths:
   - influx_topics:
      - 'test'
+	send_batch: 1000
+	tsd_flush_time: 10
+	kafka_reader_threads: 1
+	processor_threads: 1
+	filter_threads: 1
+	write_threads: 1
   - prometheus_topics:
      - 'test1'
-send_batch: 1000
-tsd_flush_time: 10
-kafka_reader_threads: 1
-processor_threads: 1
-filter_threads: 1
-write_threads: 1
 
 failed_writes_topic: "influx-failed-writes"

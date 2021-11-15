@@ -37,7 +37,7 @@ import (
 
 const (
 	// ResponseTimeout sets a default for how long HTTP responses should take
-	ResponseTimeout = 30
+	ResponseTimeout = 500
 	// DefaultChannelSize sets a default for how large each go channel should be
 	DefaultChannelSize = 10000
 	// DefaultOffset defines the basic kafka offset behavior for new consumer groups
