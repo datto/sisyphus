@@ -44,7 +44,7 @@ writepaths:
     send_batch: 1000
     # in seconds
     tsd_flush_time: 10
-    # seconds before a write is considered timed out
+    # milliseconds before a write is considered timed out
     write_timeout: 30
     # individual thread sizes
     kafka_reader_threads: 1
