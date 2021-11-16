@@ -9,7 +9,7 @@ ifeq ($(PKG_TAG),)
 PKG_TAG := $(shell echo $$(git describe --long --all | tr '/' '-')$$(git diff-index --quiet HEAD -- || echo '-dirty-'$$(git diff-index -u HEAD | openssl sha1 | cut -c 10-17)))
 endif
 
-all: test build ## format, lint, and build the package
+all: test bench build ## format, lint, and build the package
 
 help:
 	@echo "Makefile targets:"
@@ -22,6 +22,12 @@ setup:
 
 test: fmt lint ## run tests
 	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go test -race -mod=vendor ./...
+
+bench: ## Run simple benchmarking tests
+	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go test -mod=vendor -bench=. ./...
+
+pprof-cpu: ## pprof
+	go tool pprof -trim_path=$(NAME)@ $(NAME).pprof
 
 fmt: ## only run gofmt
 	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) gofmt -l -w -s *.go
