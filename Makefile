@@ -1,7 +1,7 @@
-.PHONY: help all format test fmt vet lint golint errcheck vendor-update build clean install-errcheck install-golint
+.PHONY: help all test fmt lint golint errcheck vendor-update build clean install-errcheck install-golint
 
 NAME := sisyphus
-GO_VER := 1.17.3-buster
+GO_VER := 1.17.3-bullseye
 BUILDTIME ?= $(shell date)
 BUILDUSER ?= $(shell id -u -n)
 PKG_TAG ?= $(shell git tag -l --points-at HEAD)
