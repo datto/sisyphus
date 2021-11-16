@@ -1,7 +1,7 @@
 .PHONY: help all test fmt lint golint errcheck vendor-update build clean install-errcheck install-golint
 
 NAME := sisyphus
-GO_VER := 1.17.3-bullseye
+GO_VER := 1.17.3
 BUILDTIME ?= $(shell date)
 BUILDUSER ?= $(shell id -u -n)
 PKG_TAG ?= $(shell git tag -l --points-at HEAD)
@@ -41,7 +41,8 @@ vendor-update: ## update vendor dependencies
 	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go mod vendor
 
 build: ## actually build package
-	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go build -tags static,netgo -mod=vendor -ldflags="-X 'main.Version=$(PKG_TAG)' -X 'main.BuildUser=$(BUILDUSER)' -X 'main.BuildTime=$(BUILDTIME)'" -o $(NAME) .
+	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER)-buster go build -tags static,netgo -mod=vendor -ldflags="-X 'main.Version=$(PKG_TAG)' -X 'main.BuildUser=$(BUILDUSER)' -X 'main.BuildTime=$(BUILDTIME)'" -o $(NAME)-buster .
+	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER)-bullseye go build -tags static,netgo -mod=vendor -ldflags="-X 'main.Version=$(PKG_TAG)' -X 'main.BuildUser=$(BUILDUSER)' -X 'main.BuildTime=$(BUILDTIME)'" -o $(NAME)-bullseye .
 
 clean: ## remove build artifacts
 	rm -f $(NAME)
