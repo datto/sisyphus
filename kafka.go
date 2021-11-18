@@ -141,15 +141,14 @@ func ReadFromKafka(ctx context.Context, cfg KafkaConsumerMeta, outputChannel cha
 	log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "section": "kafka reader"}).Info("Starting Sisyphus ingest thread...")
 	defer wg.Done()
 	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers":               cfg.Brokers,
-		"client.id":                       fmt.Sprintf("%v-%v", cfg.ClientID, cfg.ThreadCount),
-		"group.id":                        cfg.ConsumerGroup,
-		"session.timeout.ms":              cfg.SessionTimeout,
-		"go.application.rebalance.enable": true,
-		"go.events.channel.enable":        true,
-		"enable.partition.eof":            true,
-		"enable.auto.commit":              true,
-		"auto.offset.reset":               cfg.OffsetReset})
+		"bootstrap.servers":        cfg.Brokers,
+		"client.id":                fmt.Sprintf("%v-%v", cfg.ClientID, cfg.ThreadCount),
+		"group.id":                 cfg.ConsumerGroup,
+		"session.timeout.ms":       cfg.SessionTimeout,
+		"go.events.channel.enable": true,
+		"enable.partition.eof":     true,
+		"enable.auto.commit":       true,
+		"auto.offset.reset":        cfg.OffsetReset})
 	if err != nil {
 		log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "error": err, "section": "kafka reader"}).Fatal("Couldn't build consumer")
 	}
@@ -166,18 +165,6 @@ readloop:
 		case ev := <-consumer.Events():
 			ingestTimeStart := time.Now()
 			switch e := ev.(type) {
-			case kafka.AssignedPartitions:
-				log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "msg": e, "section": "kafka reader"}).Debug("Assigning partitions...")
-				err := consumer.Assign(e.Partitions)
-				if err != nil {
-					log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "msg": e, "section": "kafka reader"}).Error("Couldn't assign partitions")
-				}
-			case kafka.RevokedPartitions:
-				log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "msg": e, "section": "kafka reader"}).Debug("Revoked partitions...")
-				err := consumer.Unassign()
-				if err != nil {
-					log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "msg": e, "section": "kafka reader"}).Error("Couldn't unassign partitions")
-				}
 			case kafka.PartitionEOF:
 				log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "msg": e, "section": "kafka reader"}).Debug("End of partition...")
 			case *kafka.Message:
