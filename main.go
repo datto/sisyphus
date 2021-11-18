@@ -104,6 +104,7 @@ func main() {
 	if *memprofile {
 		defer profile.Start(profile.MemProfile).Stop()
 	}
+	log.WithFields(log.Fields{"Version": Version}).Info("Sisyphus starting...")
 	var c Config
 	c.LoadConfig(*cfgfile)
 	if err != nil {
