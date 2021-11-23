@@ -9,7 +9,6 @@ Kafka -> Influx 2.x forwarder in Golang
   * Influx line protocol (https://github.com/influxdata/telegraf/tree/master/plugins/serializers/influx)
   * "Prometheus JSON" format (created from https://github.com/Telefonica/prometheus-kafka-adapter#json)
 2. Outbound data writes to an Influx v2 compatible endpoint.
-3. Partition re-sizing of topics requires a restart of the service to ensure new partitions are discovered correctly.
 
 # Guarantees
 
