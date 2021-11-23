@@ -62,7 +62,6 @@ func deserializeInfluxLine(thread int, msg []byte, flipSingleField bool) []Influ
 		if err != nil {
 			log.WithFields(log.Fields{"threadnum": thread, "error": err, "incoming_msg": msg, "section": "influx Line processing"}).Error("Couldn't process message")
 		} else {
-			log.WithFields(log.Fields{"threadnum": thread, "points": points, "section": "influx Line processing"}).Info("Points extracted")
 			for _, point := range points {
 				jsonMsg := InfluxMetric{
 					Name: string(point.Name()), Tags: make(map[string]string),
