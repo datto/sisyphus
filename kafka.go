@@ -165,6 +165,18 @@ readloop:
 		case ev := <-consumer.Events():
 			ingestTimeStart := time.Now()
 			switch e := ev.(type) {
+			case kafka.AssignedPartitions:
+				log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "msg": e, "section": "kafka reader"}).Debug("Assigning partitions...")
+				err := consumer.Assign(e.Partitions)
+				if err != nil {
+					log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "msg": e, "section": "kafka reader"}).Error("Couldn't assign partitions")
+				}
+			case kafka.RevokedPartitions:
+				log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "msg": e, "section": "kafka reader"}).Debug("Revoked partitions...")
+				err := consumer.Unassign()
+				if err != nil {
+					log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "msg": e, "section": "kafka reader"}).Error("Couldn't unassign partitions")
+				}
 			case kafka.PartitionEOF:
 				log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "msg": e, "section": "kafka reader"}).Debug("End of partition...")
 			case *kafka.Message:
