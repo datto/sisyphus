@@ -50,7 +50,8 @@ Becomes:
 
 The other potential change is whether or not we're "flipping" single fields for a VictoriaMetrics output
 */
-func deserializeInfluxLine(thread int, msg []byte, flipSingleField bool, outChan chan InfluxMetric) {
+func deserializeInfluxLine(thread int, msg []byte, flipSingleField bool) []InfluxMetric {
+	var outputStats []InfluxMetric
 	ProcTimeStart := time.Now()
 	// logFields := {"threadNum": thread, "section": "processing"}
 	ReceivedMsgs.Inc()
@@ -82,11 +83,12 @@ func deserializeInfluxLine(thread int, msg []byte, flipSingleField bool, outChan
 					jsonMsg.Name += fmt.Sprintf("_%v", fieldName)
 				}
 				jsonMsg.Timestamp = point.UnixNano()
-				outChan <- jsonMsg
+				outputStats = append(outputStats, jsonMsg)
 			}
 		}
 	}
 	ProcessTime.Add(float64(time.Now().Sub(ProcTimeStart)) / TimeSegmentDivisor)
+	return outputStats
 }
 
 /*
@@ -108,7 +110,8 @@ e.g.
 
 The only potential change is whether or not we're "flipping" single fields for a VictoriaMetrics output
 */
-func deserializeInfluxJSON(thread int, msg []byte, flipSingleField bool, outChan chan InfluxMetric) {
+func deserializeInfluxJSON(thread int, msg []byte, flipSingleField bool) []InfluxMetric {
+	var outputStats []InfluxMetric
 	ProcTimeStart := time.Now()
 	// logFields := {"threadNum": thread, "section": "processing"}
 	ReceivedMsgs.Inc()
@@ -142,13 +145,14 @@ func deserializeInfluxJSON(thread int, msg []byte, flipSingleField bool, outChan
 					tmpMetric.Tags[k] = v
 				}
 				// log.WithFields(log.Fields{"Message": tmpMetric, "threadNum": thread, "section": "influx JSON processing"}).Info("Finished Message")
-				outChan <- tmpMetric
+				outputStats = append(outputStats, tmpMetric)
 			} else {
-				outChan <- jsonMsg
+				outputStats = append(outputStats, jsonMsg)
 			}
 		}
 	}
 	ProcessTime.Add(float64(time.Now().Sub(ProcTimeStart)) / TimeSegmentDivisor)
+	return outputStats
 }
 
 /*
@@ -170,7 +174,8 @@ Because Prometheus metrics should already meet the prometheus data model require
 through filtering. This means we _do_ have to handle normalization here, as well as addressing the "single field"
 issue for VictoriaMetrics outputs.
 */
-func deserializePromJSON(thread int, msg []byte, outChan chan InfluxMetric, normalize bool, flipSingleField bool) {
+func deserializePromJSON(thread int, msg []byte, normalize bool, flipSingleField bool) []InfluxMetric {
+	var outputStats []InfluxMetric
 	ProcTimeStart := time.Now()
 	ReceivedMsgs.Inc()
 	if msg == nil {
@@ -182,6 +187,7 @@ func deserializePromJSON(thread int, msg []byte, outChan chan InfluxMetric, norm
 		}
 		var jsonMsg PromMetric
 		err := json.Unmarshal(msg, &jsonMsg)
+		// except normalizing the bytes before we serialize means the timestamp field gets slightly munged...
 		if normalize {
 			jsonMsg.Timestamp = strings.ToUpper(jsonMsg.Timestamp)
 		}
@@ -241,11 +247,12 @@ func deserializePromJSON(thread int, msg []byte, outChan chan InfluxMetric, norm
 					}
 				}
 				// skip filtering, this is already prometheus-compatible
-				outChan <- finalMsg
+				outputStats = append(outputStats, finalMsg)
 			}
 		}
 	}
 	ProcessTime.Add(float64(time.Now().Sub(ProcTimeStart)) / TimeSegmentDivisor)
+	return outputStats
 }
 
 //ProcessInfluxLineMsg : parse and forward an influx line protocol message
@@ -257,11 +264,15 @@ processloop:
 	for {
 		select {
 		case msg := <-inChannel:
-			deserializeInfluxLine(thread, msg, flipSingleField, outChannel)
+			for _, metric := range deserializeInfluxLine(thread, msg, flipSingleField) {
+				outChannel <- metric
+			}
 		case <-ctx.Done():
 			log.WithFields(log.Fields{"threadNum": thread, "section": "influx Line processing"}).Info("Closing processing thread...")
 			for msg := range inChannel {
-				deserializeInfluxLine(thread, msg, flipSingleField, outChannel)
+				for _, metric := range deserializeInfluxLine(thread, msg, flipSingleField) {
+					outChannel <- metric
+				}
 			}
 			break processloop
 		}
@@ -277,11 +288,15 @@ processloop:
 	for {
 		select {
 		case msg := <-inChannel:
-			deserializeInfluxJSON(thread, msg, flipSingleField, outChannel)
+			for _, metric := range deserializeInfluxJSON(thread, msg, flipSingleField) {
+				outChannel <- metric
+			}
 		case <-ctx.Done():
 			log.WithFields(log.Fields{"threadNum": thread, "section": "influx JSON processing"}).Info("Closing processing thread...")
 			for msg := range inChannel {
-				deserializeInfluxJSON(thread, msg, flipSingleField, outChannel)
+				for _, metric := range deserializeInfluxJSON(thread, msg, flipSingleField) {
+					outChannel <- metric
+				}
 			}
 			break processloop
 		}
@@ -297,11 +312,15 @@ processloop:
 	for {
 		select {
 		case msg := <-inChannel:
-			deserializePromJSON(thread, msg, outChannel, normalize, flipSingleField)
+			for _, metric := range deserializePromJSON(thread, msg, normalize, flipSingleField) {
+				outChannel <- metric
+			}
 		case <-ctx.Done():
 			log.WithFields(log.Fields{"threadNum": thread, "section": "prometheus processing"}).Info("Closing processing thread...")
 			for msg := range inChannel {
-				deserializePromJSON(thread, msg, outChannel, normalize, flipSingleField)
+				for _, metric := range deserializePromJSON(thread, msg, normalize, flipSingleField) {
+					outChannel <- metric
+				}
 			}
 			break processloop
 		}
