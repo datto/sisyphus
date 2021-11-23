@@ -62,6 +62,7 @@ func deserializeInfluxLine(thread int, msg []byte, flipSingleField bool) []Influ
 		if err != nil {
 			log.WithFields(log.Fields{"threadnum": thread, "error": err, "incoming_msg": msg, "section": "influx Line processing"}).Error("Couldn't process message")
 		} else {
+			log.WithFields(log.Fields{"threadnum": thread, "points": points, "section": "influx Line processing"}).Info("Points extracted")
 			for _, point := range points {
 				jsonMsg := InfluxMetric{
 					Name: string(point.Name()), Tags: make(map[string]string),
@@ -81,6 +82,10 @@ func deserializeInfluxLine(thread int, msg []byte, flipSingleField bool) []Influ
 						jsonMsg.Fields["value"] = value
 					}
 					jsonMsg.Name += fmt.Sprintf("_%v", fieldName)
+				} else {
+					for field, value := range fields {
+						jsonMsg.Fields[field] = value
+					}
 				}
 				jsonMsg.Timestamp = point.UnixNano()
 				outputStats = append(outputStats, jsonMsg)
@@ -187,13 +192,16 @@ func deserializePromJSON(thread int, msg []byte, normalize bool, flipSingleField
 		}
 		var jsonMsg PromMetric
 		err := json.Unmarshal(msg, &jsonMsg)
-		// except normalizing the bytes before we serialize means the timestamp field gets slightly munged...
-		if normalize {
-			jsonMsg.Timestamp = strings.ToUpper(jsonMsg.Timestamp)
-		}
 		if err != nil {
 			log.WithFields(log.Fields{"threadNum": thread, "error": err, "incoming_msg": msg, "section": "prometheus processing"}).Error("Couldn't process message")
 		} else {
+			/*
+				normalizing the bytes before we serialize means the timestamp field gets slightly munged.
+				This is because the timestamp coming in may be in RFC3339
+			*/
+			if normalize {
+				jsonMsg.Timestamp = strings.ToUpper(jsonMsg.Timestamp)
+			}
 			/*
 				Timestamps produced by https://github.com/Telefonica/prometheus-kafka-adapter (which we're relying on)
 				come in as RFC3339. Need to convert that back to int64
