@@ -247,13 +247,12 @@ func deserializePromJSON(thread int, msg []byte, normalize bool, flipSingleField
 					tmpSliceLen := len(tmpSlice)
 					if tmpSliceLen > 1 {
 						finalMsg.Fields[tmpSlice[tmpSliceLen-1]] = jsonMsg.Value
-						finalMsg.Name = strings.Join(tmpSlice[0:tmpSliceLen-2], "_")
+						finalMsg.Name = strings.Join(tmpSlice[0:tmpSliceLen-1], "_")
 					} else {
 						finalMsg.Fields["value"] = jsonMsg.Value
 						finalMsg.Name = jsonMsg.Name
 					}
 				}
-				// skip filtering, this is already prometheus-compatible
 				outputStats = append(outputStats, finalMsg)
 			}
 		}
