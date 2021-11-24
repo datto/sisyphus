@@ -25,6 +25,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -41,7 +42,7 @@ var (
 	allowedTagKeys   = regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9_]*$")
 )
 
-func processMsg(thread int, msg InfluxMetric, channel chan InfluxMetric, normalize bool) {
+func filterMsg(thread int, msg InfluxMetric, normalize bool) (InfluxMetric, error) {
 	FilterTimeStart := time.Now()
 	finalMsg := InfluxMetric{
 		Name: "", Fields: make(map[string]interface{}),
@@ -53,13 +54,13 @@ func processMsg(thread int, msg InfluxMetric, channel chan InfluxMetric, normali
 	if !allowedFirstChar.MatchString(msg.Name) {
 		DroppedMsgs.Inc()
 		log.WithFields(log.Fields{"threadNum": thread, "name": msg.Name, "metric": msg, "section": "filter"}).Warning("Dropped! Bad first character in name")
-		return
+		return InfluxMetric{}, fmt.Errorf("Dropped metric with bad name")
 	}
 	// Also check for metrics with no fields (this occasionally happens with histograms from prometheus data sources)
 	if len(msg.Fields) < 1 {
 		DroppedMsgs.Inc()
 		log.WithFields(log.Fields{"threadNum": thread, "name": msg.Name, "metric": msg, "section": "filter"}).Warning("Dropped! No fields in incoming metric")
-		return
+		return InfluxMetric{}, fmt.Errorf("Dropped metric with bad name")
 	}
 	if normalize {
 		name = strings.ToLower(msg.Name)
@@ -104,8 +105,8 @@ func processMsg(thread int, msg InfluxMetric, channel chan InfluxMetric, normali
 		}
 	}
 	MetricsCounted.Add(len(finalMsg.Fields))
-	channel <- finalMsg
 	FilterTime.Add(float64(time.Now().Sub(FilterTimeStart)) / TimeSegmentDivisor)
+	return finalMsg, nil
 }
 
 // FilterMessages is our main loop for ensuring incoming messages match our expected format
@@ -117,11 +118,17 @@ filterloop:
 	for {
 		select {
 		case msg := <-inChannel:
-			processMsg(thread, msg, outChannel, normalize)
+			output, err := filterMsg(thread, msg, normalize)
+			if err == nil {
+				outChannel <- output
+			}
 		case <-ctx.Done():
 			log.WithFields(log.Fields{"threadNum": thread, "section": "filter"}).Info("Closing filter thread...")
 			for msg := range inChannel {
-				processMsg(thread, msg, outChannel, normalize)
+				output, err := filterMsg(thread, msg, normalize)
+				if err == nil {
+					outChannel <- output
+				}
 			}
 			break filterloop
 		}
