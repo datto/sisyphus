@@ -13,7 +13,7 @@ github.com/deepmap/oapi-codegen/pkg/types
 ## explicit; go 1.15
 github.com/influxdata/influxdb/models
 github.com/influxdata/influxdb/pkg/escape
-# github.com/influxdata/influxdb-client-go/v2 v2.5.1
+# github.com/influxdata/influxdb-client-go/v2 v2.6.0
 ## explicit; go 1.13
 github.com/influxdata/influxdb-client-go/v2
 github.com/influxdata/influxdb-client-go/v2/api

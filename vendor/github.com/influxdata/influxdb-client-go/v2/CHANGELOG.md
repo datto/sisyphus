@@ -1,8 +1,19 @@
+## 2.6.0[2021-11-26]
+### Features
+- [#285](https://github.com/influxdata/influxdb-client-go/pull/285) Added *Client.Ping()* function as the only validation method available in both OSS and Cloud.
+- [#286](https://github.com/influxdata/influxdb-client-go/pull/286) Synced generated server API with the latest [oss.yml](https://github.com/influxdata/openapi/blob/master/contracts/oss.yml).
+- [#287](https://github.com/influxdata/influxdb-client-go/pull/287) Added *FluxRecord.Result()* function as a convenient way to retrieve the Flux result name of data.
+
+### Bug fixes
+- [#285](https://github.com/influxdata/influxdb-client-go/pull/285) Functions *Client.Health()* and *Client.Ready()* correctly report an error when called against InfluxDB Cloud.
+
+### Breaking change
+- [#285](https://github.com/influxdata/influxdb-client-go/pull/285) Function *Client.Ready()* now returns `*domain.Ready` with full uptime info.
+
 ## 2.5.1[2021-09-17]
 ### Bug fixes
  - [#276](https://github.com/influxdata/influxdb-client-go/pull/276) Synchronized logging methods of _log.Logger_.
  
-### Features
 ## 2.5.0 [2021-08-20]
 ### Features
  - [#264](https://github.com/influxdata/influxdb-client-go/pull/264) Synced generated server API with the latest [oss.yml](https://github.com/influxdata/openapi/blob/master/contracts/oss.yml). 
