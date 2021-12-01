@@ -1,5 +1,6 @@
 *.deb
-sisyphus
+sisyphus-buster
+sisyphus-bullseye
 gopkg/*
 .vagrant/*
 go/*
