@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/VictoriaMetrics/metrics v1.18.1
-	github.com/confluentinc/confluent-kafka-go v1.7.0
+	github.com/confluentinc/confluent-kafka-go v1.8.2
 	github.com/influxdata/influxdb v1.9.5
 	github.com/influxdata/influxdb-client-go/v2 v2.6.0
 	github.com/json-iterator/go v1.1.12
