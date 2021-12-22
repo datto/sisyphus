@@ -37,10 +37,16 @@ import (
 )
 
 /*
-Pipeline :
-meta struct to track our pipelines across threads
+	Pipeline :
+	meta struct to track our pipelines across threads
 */
 type Pipeline struct {
+	/*
+		Pipeline meta variables
+		(Context and waitgroups)
+		Allows for signal management of
+		each pipeline across threads
+	*/
 	Ctx                   context.Context
 	ReadCTX               context.Context
 	ReadCancel            context.CancelFunc
@@ -57,6 +63,10 @@ type Pipeline struct {
 	FilterWG              sync.WaitGroup
 	WriteWG               sync.WaitGroup
 	FailedWG              sync.WaitGroup
+	/*
+		Actual variables needed for processing
+		data in the pipeline
+	*/
 	TSDURL                string
 	ProcessInfluxJSONChan chan []byte
 	ProcessInfluxLineChan chan []byte
@@ -110,6 +120,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	/*
+		Shouldn't allow for many signals to buffer
+		Process each one before moving forward
+	*/
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 	log.WithFields(log.Fields{"Configs": c.WritePaths, "Length": len(c.WritePaths)}).Debug("Creating endpoint structs")
@@ -117,6 +131,9 @@ func main() {
 	go StatsListener(c.StatsAddress, c.StatsPort)
 
 	for i := 0; i < len(c.WritePaths); i++ {
+		/*
+			Properly format write endpoint
+		*/
 		if c.WritePaths[i].TSDPort != "" {
 			Endpoints[i].TSDURL = fmt.Sprintf("%v:%v", c.WritePaths[i].TSDEndpoint, c.WritePaths[i].TSDPort)
 		} else {
@@ -124,6 +141,10 @@ func main() {
 		}
 		Endpoints[i].TSDURL = fmt.Sprintf("%v%v", Endpoints[i].TSDURL, c.WritePaths[i].TSDURLPath)
 		log.WithFields(log.Fields{"TSDURL": Endpoints[i].TSDURL, "section": "main"}).Info("Output URL")
+		/*
+			Build meta objects
+			(contexts and wait groups)
+		*/
 		Endpoints[i].Ctx = context.Background()
 		Endpoints[i].ReadCTX, Endpoints[i].ReadCancel = context.WithCancel(Endpoints[i].Ctx)
 		Endpoints[i].JSONCTX, Endpoints[i].JSONCancel = context.WithCancel(Endpoints[i].Ctx)
@@ -133,6 +154,9 @@ func main() {
 
 		/*
 			Channels
+
+			Actually create all the channels with the defined
+			buffer size
 		*/
 		Endpoints[i].ProcessInfluxJSONChan = make(chan []byte, c.WritePaths[i].ChannelSize)
 		Endpoints[i].ProcessInfluxLineChan = make(chan []byte, c.WritePaths[i].ChannelSize)
@@ -143,12 +167,22 @@ func main() {
 
 		/*
 			Go Routines
+
+			First routine is a single thread for failed writes
+			This shouldn't need more than one thread because
+			it should be low-volume
 		*/
 		Endpoints[i].FailedWG.Add(1)
 		go SendFailedToKafka(Endpoints[i].FailedCTX, Endpoints[i].FailedWritesChan, KafkaProducerMeta{Topic: c.FailedWritesTopic,
 			Brokers: c.BrokerStr, CompressionType: c.FailedWritesCompression,
 			WritePath: Endpoints[i].TSDURL, TSDOrg: c.WritePaths[i].TSDDBOrg,
 			TSDName: c.WritePaths[i].TSDDBName}, &Endpoints[i].FailedWG)
+		/*
+			Next we add processing threads
+			This is the step that consumes from Kafka
+			and deserializes messages. We'll want *at least*
+			one of these for each topic, and likely many
+		*/
 		for thread := 1; thread <= c.WritePaths[i].ProcessThreads; thread++ {
 			if len(c.WritePaths[i].InfluxJSONTopics) > 0 {
 				Endpoints[i].JSONWG.Add(1)
@@ -163,13 +197,20 @@ func main() {
 				go ProcessInfluxLineMsg(Endpoints[i].JSONCTX, thread, Endpoints[i].ProcessInfluxLineChan, Endpoints[i].FilterTagChan, &Endpoints[i].JSONWG, c.WritePaths[i].FlipSingleFields)
 			}
 		}
+		/*
+			We're only going to filter influx-style metrics
+			because they're a more generally permissive format,
+			so there's more things to filter.
+			Prometheus metrics should already meet the Prometheus data model...
+		*/
 		for thread := 1; thread <= c.WritePaths[i].FilterThreads; thread++ {
-			/*
-				We're only going to filter influx-style metrics (because they're more permissive)
-			*/
 			Endpoints[i].FilterWG.Add(1)
 			go FilterMessages(Endpoints[i].FilterCTX, thread, Endpoints[i].FilterTagChan, Endpoints[i].OutputTSDBChan, &Endpoints[i].FilterWG, c.Normalize)
 		}
+		/*
+			Output threads...
+			As above, we define as many as requested per write path
+		*/
 		for thread := 1; thread <= c.WritePaths[i].WriteThreads; thread++ {
 			Endpoints[i].WriteWG.Add(1)
 			cfg := OutputMeta{Thread: thread, BatchSize: c.WritePaths[i].SendBatch, WriteTimeout: c.WritePaths[i].WriteTimeout,
@@ -177,6 +218,11 @@ func main() {
 				TsdOrg: c.WritePaths[i].TSDDBOrg, TsdDbName: c.WritePaths[i].TSDDBName}
 			go SendTSDB(Endpoints[i].OutputCTX, Endpoints[i].OutputTSDBChan, Endpoints[i].FailedWritesChan, cfg, &Endpoints[i].WriteWG)
 		}
+		/*
+			Actual kafka threads, connected to the Process threads
+			We initialize these last to have the rest of the pipeline
+			ready before we start actually consuming data
+		*/
 		for thread := 1; thread <= c.WritePaths[i].ReadThreads; thread++ {
 			if len(c.WritePaths[i].InfluxJSONTopics) > 0 {
 				Endpoints[i].ReadWG.Add(1)
@@ -208,6 +254,12 @@ func main() {
 	run := true
 	for run == true {
 		select {
+		/*
+			Shut down steps...
+			Because we have wait groups stored for each pipeline object,
+			we can just loop through the WritePaths object and issue
+			cancel/wait commands to the wait groups and move along
+		*/
 		case sig := <-sigchan:
 			log.WithFields(log.Fields{"error": sig, "section": "main"}).Error("Caught signal...terminating")
 			for i := 0; i < len(c.WritePaths); i++ {
