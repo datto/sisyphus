@@ -37,8 +37,8 @@ import (
 )
 
 /*
-	Pipeline :
-	meta struct to track our pipelines across threads
+Pipeline :
+meta struct to track our pipelines across threads
 */
 type Pipeline struct {
 	/*
@@ -47,22 +47,22 @@ type Pipeline struct {
 		Allows for signal management of
 		each pipeline across threads
 	*/
-	Ctx                   context.Context
-	ReadCTX               context.Context
-	ReadCancel            context.CancelFunc
-	JSONCTX               context.Context
-	JSONCancel            context.CancelFunc
-	FilterCTX             context.Context
-	FilterCancel          context.CancelFunc
-	OutputCTX             context.Context
-	OutputCancel          context.CancelFunc
-	FailedCTX             context.Context
-	FailedCancel          context.CancelFunc
-	ReadWG                sync.WaitGroup
-	JSONWG                sync.WaitGroup
-	FilterWG              sync.WaitGroup
-	WriteWG               sync.WaitGroup
-	FailedWG              sync.WaitGroup
+	Ctx          context.Context
+	ReadCTX      context.Context
+	ReadCancel   context.CancelFunc
+	JSONCTX      context.Context
+	JSONCancel   context.CancelFunc
+	FilterCTX    context.Context
+	FilterCancel context.CancelFunc
+	OutputCTX    context.Context
+	OutputCancel context.CancelFunc
+	FailedCTX    context.Context
+	FailedCancel context.CancelFunc
+	ReadWG       sync.WaitGroup
+	JSONWG       sync.WaitGroup
+	FilterWG     sync.WaitGroup
+	WriteWG      sync.WaitGroup
+	FailedWG     sync.WaitGroup
 	/*
 		Actual variables needed for processing
 		data in the pipeline

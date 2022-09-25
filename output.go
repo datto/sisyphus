@@ -34,7 +34,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//OutputMeta : meta data about an output we need to know
+// OutputMeta : meta data about an output we need to know
 type OutputMeta struct {
 	Thread       int
 	BatchSize    uint
@@ -46,7 +46,7 @@ type OutputMeta struct {
 	TsdDbName    string
 }
 
-//BatchMeta : meta data about the batches we write to our outputs
+// BatchMeta : meta data about the batches we write to our outputs
 type BatchMeta struct {
 	Thread        int
 	BatchCount    uint

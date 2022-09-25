@@ -111,7 +111,7 @@ var (
 		})
 )
 
-//StatsListener : Actually expose an endpoint for stats to be scraped
+// StatsListener : Actually expose an endpoint for stats to be scraped
 func StatsListener(address string, port string) {
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, req *http.Request) {
 		metrics.WritePrometheus(w, true)

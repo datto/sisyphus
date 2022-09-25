@@ -136,7 +136,7 @@ failedloop:
 	}
 }
 
-//ReadFromKafka : Allow for reading Influx or Prometheus-style stats through a boolean
+// ReadFromKafka : Allow for reading Influx or Prometheus-style stats through a boolean
 func ReadFromKafka(ctx context.Context, cfg KafkaConsumerMeta, outputChannel chan []byte, wg *sync.WaitGroup) {
 	log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "section": "kafka reader"}).Info("Starting Sisyphus ingest thread...")
 	defer wg.Done()

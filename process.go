@@ -41,12 +41,13 @@ Handle incoming data in Influx's Line protocol
 e.g.
 weather,location=us-midwest temperature=82 1465839830100400200
 Becomes:
-{
-	"name": "weather",
-	"tags": {"location": "us-midwest"},
-	"fields": {"temperature": 82},
-	"timestamp": 1465839830100400200
- }
+
+	{
+		"name": "weather",
+		"tags": {"location": "us-midwest"},
+		"fields": {"temperature": 82},
+		"timestamp": 1465839830100400200
+	 }
 
 The other potential change is whether or not we're "flipping" single fields for a VictoriaMetrics output
 */
@@ -98,19 +99,20 @@ func deserializeInfluxLine(thread int, msg []byte, flipSingleField bool) []Influ
 /*
 Handle incoming data in Influx's default JSON output...
 e.g.
-{
-    "fields": {
-        "field_1": 30,
-        "field_2": 4,
-        "field_N": 59,
-        "n_images": 660
-    },
-    "name": "docker",
-    "tags": {
-        "host": "raynor"
-    },
-    "timestamp": 1458229140
-}
+
+	{
+	    "fields": {
+	        "field_1": 30,
+	        "field_2": 4,
+	        "field_N": 59,
+	        "n_images": 660
+	    },
+	    "name": "docker",
+	    "tags": {
+	        "host": "raynor"
+	    },
+	    "timestamp": 1458229140
+	}
 
 The only potential change is whether or not we're "flipping" single fields for a VictoriaMetrics output
 */
@@ -162,17 +164,17 @@ func deserializeInfluxJSON(thread int, msg []byte, flipSingleField bool) []Influ
 /*
 Handle data in Prometheus' JSON format
 
-{
-  "timestamp": "1970-01-01T00:00:00Z",
-  "value": "9876543210",
-  "name": "up",
+	{
+	  "timestamp": "1970-01-01T00:00:00Z",
+	  "value": "9876543210",
+	  "name": "up",
 
-  "labels": {
-    "__name__": "up",
-    "label1": "value1",
-    "label2": "value2"
-  }
-}
+	  "labels": {
+	    "__name__": "up",
+	    "label1": "value1",
+	    "label2": "value2"
+	  }
+	}
 
 Because Prometheus metrics should already meet the prometheus data model requirements, we don't send them
 through filtering. This means we _do_ have to handle normalization here, as well as addressing the "single field"
@@ -261,7 +263,7 @@ func deserializePromJSON(thread int, msg []byte, normalize bool, flipSingleField
 	return outputStats
 }
 
-//ProcessInfluxLineMsg : parse and forward an influx line protocol message
+// ProcessInfluxLineMsg : parse and forward an influx line protocol message
 func ProcessInfluxLineMsg(ctx context.Context, thread int, inChannel chan []byte, outChannel chan InfluxMetric, wg *sync.WaitGroup, flipSingleField bool) {
 	log.WithFields(log.Fields{"threadNum": thread, "section": "influx Line processing"}).Info("processing thread starting...")
 	defer wg.Done()
@@ -285,7 +287,7 @@ processloop:
 	}
 }
 
-//ProcessInfluxJSONMsg : parse and forward an influx JSON protocol message
+// ProcessInfluxJSONMsg : parse and forward an influx JSON protocol message
 func ProcessInfluxJSONMsg(ctx context.Context, thread int, inChannel chan []byte, outChannel chan InfluxMetric, wg *sync.WaitGroup, flipSingleField bool) {
 	log.WithFields(log.Fields{"threadNum": thread, "section": "influx JSON processing"}).Info("processing thread starting...")
 	defer wg.Done()
@@ -309,7 +311,7 @@ processloop:
 	}
 }
 
-//ProcessPromMsg : parse and forward a Prometheus JSON protocol message
+// ProcessPromMsg : parse and forward a Prometheus JSON protocol message
 func ProcessPromMsg(ctx context.Context, thread int, inChannel chan []byte, outChannel chan InfluxMetric, normalize bool, flipSingleField bool, wg *sync.WaitGroup) {
 	log.WithFields(log.Fields{"threadNum": thread, "section": "prometheus processing"}).Info("processing thread starting...")
 	defer wg.Done()
