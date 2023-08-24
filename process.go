@@ -92,7 +92,7 @@ func deserializeInfluxLine(thread int, msg []byte, flipSingleField bool) []Influ
 			}
 		}
 	}
-	ProcessTime.Add(float64(time.Now().Sub(ProcTimeStart)) / TimeSegmentDivisor)
+	ProcessTime.Add(float64(time.Since(ProcTimeStart)) / TimeSegmentDivisor)
 	return outputStats
 }
 
@@ -157,7 +157,7 @@ func deserializeInfluxJSON(thread int, msg []byte, flipSingleField bool) []Influ
 			}
 		}
 	}
-	ProcessTime.Add(float64(time.Now().Sub(ProcTimeStart)) / TimeSegmentDivisor)
+	ProcessTime.Add(float64(time.Since(ProcTimeStart)) / TimeSegmentDivisor)
 	return outputStats
 }
 
@@ -259,7 +259,7 @@ func deserializePromJSON(thread int, msg []byte, normalize bool, flipSingleField
 			}
 		}
 	}
-	ProcessTime.Add(float64(time.Now().Sub(ProcTimeStart)) / TimeSegmentDivisor)
+	ProcessTime.Add(float64(time.Since(ProcTimeStart)) / TimeSegmentDivisor)
 	return outputStats
 }
 

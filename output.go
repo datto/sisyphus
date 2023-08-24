@@ -104,7 +104,7 @@ func processOutput(msg InfluxMetric, meta *BatchMeta, failedChan chan string) {
 		meta.Batch = meta.Batch[:0]
 		meta.LastFlushTime = time.Now()
 	}
-	OutputTime.Add(float64(time.Now().Sub(outputTimeStart)) / TimeSegmentDivisor)
+	OutputTime.Add(float64(time.Since(outputTimeStart)) / TimeSegmentDivisor)
 }
 
 /*

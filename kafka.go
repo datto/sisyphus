@@ -29,7 +29,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	json "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 )
@@ -70,10 +70,6 @@ type DeadLetterMsg struct {
 	Message   string
 }
 
-var (
-	deliveryChan chan kafka.Event
-)
-
 /*
 Dead letter queue section
 
@@ -93,7 +89,7 @@ func processFailed(msg DeadLetterMsg, topic string, producer *kafka.Producer) {
 		log.WithFields(log.Fields{"error": err}).Fatal("Couldn't write message to dead letter queue")
 	}
 	FailedMsgs.Inc()
-	FailedWriteTime.Add(float64(time.Now().Sub(FailedTimeStart)) / TimeSegmentDivisor)
+	FailedWriteTime.Add(float64(time.Since(FailedTimeStart)) / TimeSegmentDivisor)
 }
 
 // SendFailedToKafka : Exposed function for sending failed write attempts to our dead letter queue
@@ -162,7 +158,15 @@ func ReadFromKafka(ctx context.Context, cfg KafkaConsumerMeta, outputChannel cha
 readloop:
 	for {
 		select {
-		case ev := <-consumer.Events():
+		case <-ctx.Done():
+			log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "section": "kafka reader"}).Info("Closing ingest thread...")
+			break readloop
+		default:
+			// magic number pulled from https://github.com/confluentinc/confluent-kafka-go/blob/master/examples/consumer_example/consumer_example.go
+			ev := consumer.Poll(100)
+			if ev == nil {
+				continue
+			}
 			ingestTimeStart := time.Now()
 			switch e := ev.(type) {
 			case kafka.AssignedPartitions:
@@ -186,10 +190,7 @@ readloop:
 				// Errors should generally be considered as informational, the client will try to automatically recover
 				log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "error": e, "section": "kafka reader"}).Error("Kafka Error, recovering...")
 			}
-			IngestTime.Add(float64(time.Now().Sub(ingestTimeStart)) / TimeSegmentDivisor)
-		case <-ctx.Done():
-			log.WithFields(log.Fields{"threadNum": cfg.ThreadCount, "section": "kafka reader"}).Info("Closing ingest thread...")
-			break readloop
+			IngestTime.Add(float64(time.Since(ingestTimeStart)) / TimeSegmentDivisor)
 		}
 	}
 }

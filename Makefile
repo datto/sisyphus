@@ -1,7 +1,9 @@
 .PHONY: help all test fmt lint golint errcheck vendor-update build clean install-errcheck install-golint
 
 NAME := sisyphus
-GO_VER := 1.21.0
+GO_VER := 1.20.7
+CURRENT_UID := $(shell id -u)
+CURRENT_GID := $(shell id -g)
 BUILDTIME ?= $(shell date)
 BUILDUSER ?= $(shell id -u -n)
 PKG_TAG ?= $(shell git tag -l --points-at HEAD)
@@ -17,38 +19,31 @@ help:
 	| sed -n 's/^\(.*\): \(.*\)##\(.*\)/    \1 :: \3/p' \
 	| column -t -c 1  -s '::'
 
-setup:
+setup: envsetup
 	docker pull golang:$(GO_VER)
+    docker pull golangci/golangci-lint:latest
 
-test: fmt lint ## run tests
-	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go test -race -mod=vendor ./...
+envsetup:
+	mkdir -p $(CURDIR)/.cache/
+	chmod -R 777 $(CURDIR)/.cache/ ## fix for rootless container environments (podman, etc.)
 
-fmt: ## only run gofmt
-	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) gofmt -l -w -s *.go
+test: envsetup fmt lint ## run tests
+	docker run --rm --user $(CURRENT_UID):$(CURRENT_GID) -v $(CURDIR)/.cache/:/.cache/ -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go test -race -mod=vendor ./...
 
-lint: golint errcheck ## run all linting steps
+fmt: envsetup ## only run gofmt
+	docker run --rm --user $(CURRENT_UID):$(CURRENT_GID) -v $(CURDIR)/.cache/:/.cache/ -v $(CURDIR):/app:z -w /app golang:$(GO_VER) gofmt -l -w -s *.go
 
-golint: install-golint ## run golint against code
-	$(CURDIR)/go/bin/golint .
+lint: envsetup ## run all linting steps
+	docker run --rm --user $(CURRENT_UID):$(CURRENT_GID) -v $(CURDIR)/.cache/:/.cache/ -v $(CURDIR):/app:z -w /app golangci/golangci-lint:latest golangci-lint run --sort-results
 
-errcheck: install-errcheck ## run errcheck against code
-	$(CURDIR)/go/bin/errcheck -verbose -exclude errcheck_excludes.txt -asserts -blank -tags static,netgo -mod=readonly ./...
-
-vendor-update: ## update vendor dependencies
+vendor-update: envsetup ## update vendor dependencies
 	rm -rf go.mod go.sum vendor/
-	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go mod init $(NAME)
-	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go mod tidy -compat=1.17
-	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go mod vendor
+	docker run --rm --user $(CURRENT_UID):$(CURRENT_GID) -v $(CURDIR)/.cache/:/.cache/ -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go mod init $(NAME)
+	docker run --rm --user $(CURRENT_UID):$(CURRENT_GID) -v $(CURDIR)/.cache/:/.cache/ -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go mod tidy
+	docker run --rm --user $(CURRENT_UID):$(CURRENT_GID) -v $(CURDIR)/.cache/:/.cache/ -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go mod vendor
 
-build: ## actually build package
-	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER)-buster go build -tags static,netgo -mod=vendor -ldflags="-X 'main.Version=$(PKG_TAG)' -X 'main.BuildUser=$(BUILDUSER)' -X 'main.BuildTime=$(BUILDTIME)'" -o $(NAME)-buster .
-	docker run --rm -v $(CURDIR):/app:z -w /app golang:$(GO_VER)-bullseye go build -tags static,netgo -mod=vendor -ldflags="-X 'main.Version=$(PKG_TAG)' -X 'main.BuildUser=$(BUILDUSER)' -X 'main.BuildTime=$(BUILDTIME)'" -o $(NAME)-bullseye .
+build: envsetup ## actually build package
+	docker run --rm --user $(CURRENT_UID):$(CURRENT_GID) -v $(CURDIR)/.cache/:/.cache/ -v $(CURDIR):/app:z -w /app golang:$(GO_VER) go build -tags static,netgo -mod=vendor -ldflags="-X 'main.Version=$(PKG_TAG)' -X 'main.BuildUser=$(BUILDUSER)' -X 'main.BuildTime=$(BUILDTIME)'" -o $(NAME)-bullseye .
 
 clean: ## remove build artifacts
 	rm -f $(NAME)
-
-install-golint: ## install golint binary
-	test -f $(CURDIR)/go/bin/golint || GOPATH=$(CURDIR)/go/ GO111MODULE=off go get -u golang.org/x/lint/golint
-
-install-errcheck: ## install errcheck binary
-	test -f $(CURDIR)/go/bin/errcheck || GOPATH=$(CURDIR)/go/ GO111MODULE=off go get -u github.com/kisielk/errcheck

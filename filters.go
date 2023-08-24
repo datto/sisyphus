@@ -54,14 +54,14 @@ func filterMsg(thread int, msg InfluxMetric, normalize bool) (InfluxMetric, erro
 	if !allowedFirstChar.MatchString(msg.Name) {
 		DroppedMsgs.Inc()
 		log.WithFields(log.Fields{"threadNum": thread, "name": msg.Name, "metric": msg, "section": "filter"}).Warning("Dropped! Bad first character in name")
-		FilterTime.Add(float64(time.Now().Sub(FilterTimeStart)) / TimeSegmentDivisor)
+		FilterTime.Add(float64(time.Since(FilterTimeStart)) / TimeSegmentDivisor)
 		return InfluxMetric{}, fmt.Errorf("Dropped metric with bad name")
 	}
 	// Also check for metrics with no fields (this occasionally happens with histograms from prometheus data sources)
 	if len(msg.Fields) < 1 {
 		DroppedMsgs.Inc()
 		log.WithFields(log.Fields{"threadNum": thread, "name": msg.Name, "metric": msg, "section": "filter"}).Warning("Dropped! No fields in incoming metric")
-		FilterTime.Add(float64(time.Now().Sub(FilterTimeStart)) / TimeSegmentDivisor)
+		FilterTime.Add(float64(time.Since(FilterTimeStart)) / TimeSegmentDivisor)
 		return InfluxMetric{}, fmt.Errorf("Dropped metric with bad name")
 	}
 	if normalize {
@@ -107,7 +107,7 @@ func filterMsg(thread int, msg InfluxMetric, normalize bool) (InfluxMetric, erro
 		}
 	}
 	MetricsCounted.Add(len(finalMsg.Fields))
-	FilterTime.Add(float64(time.Now().Sub(FilterTimeStart)) / TimeSegmentDivisor)
+	FilterTime.Add(float64(time.Since(FilterTimeStart)) / TimeSegmentDivisor)
 	return finalMsg, nil
 }
 

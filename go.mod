@@ -1,10 +1,10 @@
 module sisyphus
 
-go 1.21.0
+go 1.20
 
 require (
 	github.com/VictoriaMetrics/metrics v1.24.0
-	github.com/confluentinc/confluent-kafka-go v1.9.2
+	github.com/confluentinc/confluent-kafka-go/v2 v2.2.0
 	github.com/influxdata/influxdb v1.11.2
 	github.com/influxdata/influxdb-client-go/v2 v2.12.3
 	github.com/json-iterator/go v1.1.12
@@ -23,6 +23,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/valyala/fastrand v1.1.0 // indirect
 	github.com/valyala/histogram v1.2.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
 )
