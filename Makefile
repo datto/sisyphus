@@ -21,7 +21,7 @@ help:
 
 setup: envsetup
 	docker pull golang:$(GO_VER)
-    docker pull golangci/golangci-lint:latest
+	docker pull golangci/golangci-lint:latest
 
 envsetup:
 	mkdir -p $(CURDIR)/.cache/
