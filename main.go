@@ -126,6 +126,7 @@ func main() {
 	*/
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
+	done := make(chan bool, 1)
 	log.WithFields(log.Fields{"Configs": c.WritePaths, "Length": len(c.WritePaths)}).Debug("Creating endpoint structs")
 	Endpoints := make([]Pipeline, len(c.WritePaths))
 	go StatsListener(c.StatsAddress, c.StatsPort)
@@ -251,8 +252,7 @@ func main() {
 		}
 	}
 
-	run := true
-	for run {
+	go func() {
 		/*
 			Shut down steps...
 			Because we have wait groups stored for each pipeline object,
@@ -284,6 +284,7 @@ func main() {
 			Endpoints[i].FailedWG.Wait()
 		}
 		log.WithFields(log.Fields{"section": "main"}).Info("Queues flushed. Exiting.")
-		run = false
-	}
+		done <- true
+	}()
+	<-done
 }
