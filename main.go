@@ -37,8 +37,8 @@ import (
 )
 
 /*
-	Pipeline :
-	meta struct to track our pipelines across threads
+Pipeline :
+meta struct to track our pipelines across threads
 */
 type Pipeline struct {
 	/*
@@ -47,22 +47,22 @@ type Pipeline struct {
 		Allows for signal management of
 		each pipeline across threads
 	*/
-	Ctx                   context.Context
-	ReadCTX               context.Context
-	ReadCancel            context.CancelFunc
-	JSONCTX               context.Context
-	JSONCancel            context.CancelFunc
-	FilterCTX             context.Context
-	FilterCancel          context.CancelFunc
-	OutputCTX             context.Context
-	OutputCancel          context.CancelFunc
-	FailedCTX             context.Context
-	FailedCancel          context.CancelFunc
-	ReadWG                sync.WaitGroup
-	JSONWG                sync.WaitGroup
-	FilterWG              sync.WaitGroup
-	WriteWG               sync.WaitGroup
-	FailedWG              sync.WaitGroup
+	Ctx          context.Context
+	ReadCTX      context.Context
+	ReadCancel   context.CancelFunc
+	JSONCTX      context.Context
+	JSONCancel   context.CancelFunc
+	FilterCTX    context.Context
+	FilterCancel context.CancelFunc
+	OutputCTX    context.Context
+	OutputCancel context.CancelFunc
+	FailedCTX    context.Context
+	FailedCancel context.CancelFunc
+	ReadWG       sync.WaitGroup
+	JSONWG       sync.WaitGroup
+	FilterWG     sync.WaitGroup
+	WriteWG      sync.WaitGroup
+	FailedWG     sync.WaitGroup
 	/*
 		Actual variables needed for processing
 		data in the pipeline
@@ -126,6 +126,7 @@ func main() {
 	*/
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
+	done := make(chan bool, 1)
 	log.WithFields(log.Fields{"Configs": c.WritePaths, "Length": len(c.WritePaths)}).Debug("Creating endpoint structs")
 	Endpoints := make([]Pipeline, len(c.WritePaths))
 	go StatsListener(c.StatsAddress, c.StatsPort)
@@ -251,41 +252,39 @@ func main() {
 		}
 	}
 
-	run := true
-	for run == true {
-		select {
+	go func() {
 		/*
 			Shut down steps...
 			Because we have wait groups stored for each pipeline object,
 			we can just loop through the WritePaths object and issue
 			cancel/wait commands to the wait groups and move along
 		*/
-		case sig := <-sigchan:
-			log.WithFields(log.Fields{"error": sig, "section": "main"}).Error("Caught signal...terminating")
-			for i := 0; i < len(c.WritePaths); i++ {
-				log.WithFields(log.Fields{"queue": i}).Info("Closing ingest threads for writepath")
-				Endpoints[i].ReadCancel()
-				Endpoints[i].ReadWG.Wait()
-				log.WithFields(log.Fields{"Influx Proccess Queue": len(Endpoints[i].ProcessInfluxJSONChan), "Prometheus Process Queue": len(Endpoints[i].ProcessPromJSONChan), "section": "main"}).Info("Waiting on queues to flush...")
-				close(Endpoints[i].ProcessInfluxJSONChan)
-				close(Endpoints[i].ProcessPromJSONChan)
-				Endpoints[i].JSONCancel()
-				Endpoints[i].JSONWG.Wait()
-				log.WithFields(log.Fields{"Filter Queue": len(Endpoints[i].FilterTagChan), "section": "main"}).Info("Waiting on queues to flush...")
-				close(Endpoints[i].FilterTagChan)
-				Endpoints[i].FilterCancel()
-				Endpoints[i].FilterWG.Wait()
-				log.WithFields(log.Fields{"Output Queue": len(Endpoints[i].OutputTSDBChan), "section": "main"}).Info("Waiting on queues to flush...")
-				close(Endpoints[i].OutputTSDBChan)
-				Endpoints[i].OutputCancel()
-				Endpoints[i].WriteWG.Wait()
-				log.WithFields(log.Fields{"Failed Write Queue": len(Endpoints[i].FailedWritesChan), "section": "main"}).Info("Waiting on queues to flush...")
-				close(Endpoints[i].FailedWritesChan)
-				Endpoints[i].FailedCancel()
-				Endpoints[i].FailedWG.Wait()
-			}
-			log.WithFields(log.Fields{"section": "main"}).Info("Queues flushed. Exiting.")
-			run = false
+		sig := <-sigchan
+		log.WithFields(log.Fields{"error": sig, "section": "main"}).Error("Caught signal...terminating")
+		for i := 0; i < len(c.WritePaths); i++ {
+			log.WithFields(log.Fields{"queue": i}).Info("Closing ingest threads for writepath")
+			Endpoints[i].ReadCancel()
+			Endpoints[i].ReadWG.Wait()
+			log.WithFields(log.Fields{"Influx Proccess Queue": len(Endpoints[i].ProcessInfluxJSONChan), "Prometheus Process Queue": len(Endpoints[i].ProcessPromJSONChan), "section": "main"}).Info("Waiting on queues to flush...")
+			close(Endpoints[i].ProcessInfluxJSONChan)
+			close(Endpoints[i].ProcessPromJSONChan)
+			Endpoints[i].JSONCancel()
+			Endpoints[i].JSONWG.Wait()
+			log.WithFields(log.Fields{"Filter Queue": len(Endpoints[i].FilterTagChan), "section": "main"}).Info("Waiting on queues to flush...")
+			close(Endpoints[i].FilterTagChan)
+			Endpoints[i].FilterCancel()
+			Endpoints[i].FilterWG.Wait()
+			log.WithFields(log.Fields{"Output Queue": len(Endpoints[i].OutputTSDBChan), "section": "main"}).Info("Waiting on queues to flush...")
+			close(Endpoints[i].OutputTSDBChan)
+			Endpoints[i].OutputCancel()
+			Endpoints[i].WriteWG.Wait()
+			log.WithFields(log.Fields{"Failed Write Queue": len(Endpoints[i].FailedWritesChan), "section": "main"}).Info("Waiting on queues to flush...")
+			close(Endpoints[i].FailedWritesChan)
+			Endpoints[i].FailedCancel()
+			Endpoints[i].FailedWG.Wait()
 		}
-	}
+		log.WithFields(log.Fields{"section": "main"}).Info("Queues flushed. Exiting.")
+		done <- true
+	}()
+	<-done
 }

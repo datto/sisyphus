@@ -25,7 +25,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -138,7 +137,7 @@ func (c *Config) LoadConfig(ConfigFile string) {
 	if err != nil {
 		panic(err)
 	}
-	yamlFile, err := ioutil.ReadFile(filename)
+	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}

@@ -65,7 +65,7 @@ var (
 			return float64(time.Since(startTime).Seconds())
 		})
 	// Current dead letter queue length
-	deadLetterQueueLen = metrics.NewGauge("dead_letter_queue_len",
+	_ = metrics.NewGauge("dead_letter_queue_len",
 		func() float64 {
 			failedWrites := 0
 			for i := 0; i < len(Endpoints); i++ {
@@ -74,7 +74,7 @@ var (
 			return float64(failedWrites)
 		})
 	// Current queue length for messages to be filtered
-	filterQueueLen = metrics.NewGauge("filter_queue_len",
+	_ = metrics.NewGauge("filter_queue_len",
 		func() float64 {
 			filtered := 0
 			for i := 0; i < len(Endpoints); i++ {
@@ -83,7 +83,7 @@ var (
 			return float64(filtered)
 		})
 	// Current write queue length
-	writeQueueLen = metrics.NewGauge("output_queue_len",
+	_ = metrics.NewGauge("output_queue_len",
 		func() float64 {
 			output := 0
 			for i := 0; i < len(Endpoints); i++ {
@@ -92,7 +92,7 @@ var (
 			return float64(output)
 		})
 	// Current cached influx-style metrics queue length
-	influxIngestQueueLen = metrics.NewGauge("influx_ingest_queue_len",
+	_ = metrics.NewGauge("influx_ingest_queue_len",
 		func() float64 {
 			influxIn := 0
 			for i := 0; i < len(Endpoints); i++ {
@@ -101,7 +101,7 @@ var (
 			return float64(influxIn)
 		})
 	// Current cached prometheus-style metrics queue length
-	promIngestQueuLen = metrics.NewGauge("prometheus_ingest_queue_len",
+	_ = metrics.NewGauge("prometheus_ingest_queue_len",
 		func() float64 {
 			promIn := 0
 			for i := 0; i < len(Endpoints); i++ {
@@ -111,7 +111,7 @@ var (
 		})
 )
 
-//StatsListener : Actually expose an endpoint for stats to be scraped
+// StatsListener : Actually expose an endpoint for stats to be scraped
 func StatsListener(address string, port string) {
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, req *http.Request) {
 		metrics.WritePrometheus(w, true)

@@ -34,7 +34,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//OutputMeta : meta data about an output we need to know
+// OutputMeta : meta data about an output we need to know
 type OutputMeta struct {
 	Thread       int
 	BatchSize    uint
@@ -46,7 +46,7 @@ type OutputMeta struct {
 	TsdDbName    string
 }
 
-//BatchMeta : meta data about the batches we write to our outputs
+// BatchMeta : meta data about the batches we write to our outputs
 type BatchMeta struct {
 	Thread        int
 	BatchCount    uint
@@ -104,7 +104,7 @@ func processOutput(msg InfluxMetric, meta *BatchMeta, failedChan chan string) {
 		meta.Batch = meta.Batch[:0]
 		meta.LastFlushTime = time.Now()
 	}
-	OutputTime.Add(float64(time.Now().Sub(outputTimeStart)) / TimeSegmentDivisor)
+	OutputTime.Add(float64(time.Since(outputTimeStart)) / TimeSegmentDivisor)
 }
 
 /*
